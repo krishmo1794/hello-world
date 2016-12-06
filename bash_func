@@ -1,0 +1,177 @@
+#===================================================================================
+# Compile and execute a C source on the fly
+cc() {
+	[[ $1 ]]    || { echo "Missing operand" >&2; return 1; }
+	[[ -r $1 ]] || { printf "File %s does not exist or is not readable\n" "$1" >&2; return 1; }
+	local output_path=${TMPDIR:-/tmp}/${1##*/};
+	gcc "$1" -o "$output_path" && "$output_path";
+	rm "$output_path";
+	return 0;
+}
+#===================================================================================
+##clock - A bash clock that can run in your terminal window
+clock ()
+{
+while true;do clear;echo "===========";date +"%r";echo "===========";sleep 1;done
+}
+#===================================================================================
+#netinfo - shows network information for your system
+netinfo ()
+{
+echo "--------------- Network Information ---------------"
+/sbin/ifconfig | awk /'inet addr/ {print $2}'
+/sbin/ifconfig | awk /'Bcast/ {print $3}'
+/sbin/ifconfig | awk /'inet addr/ {print $4}'
+/sbin/ifconfig | awk /'HWaddr/ {print $4,$5}'
+myip=`lynx -dump -hiddenlinks=ignore -nolist http://checkip.dyndns.org:8245/ | sed '/^$/d; s/^[ ]*//g; s/[ ]*$//g' `
+echo "${myip}"
+echo "---------------------------------------------------"
+}
+#===================================================================================
+##Function to take screenshot of current window
+shot ()
+{
+import -frame -strip -quality 75 "$HOME/$(date +%s).png"
+}
+#===================================================================================
+##finds directory sizes and lists them for the current directory
+dirsize ()
+{
+du -shx * .[a-zA-Z0-9_]* 2> /dev/null | \
+egrep '^ *[0-9.]*[MG]' | sort -n > /tmp/list
+egrep '^ *[0-9.]*M' /tmp/list
+egrep '^ *[0-9.]*G' /tmp/list
+rm /tmp/list
+}
+#===================================================================================
+## assembly compile function
+compile()
+{
+	nasm -f elf $1
+	var="$1"	#Assign value of $1 to var
+	IFS="."		#"." interpreted as seperator
+	extract_args()
+	{
+	for arg
+	do
+		x1=`echo "$1"`	#set x1=value before "."
+		x2=`echo "$2"`	#set x2=value after "."
+	done 
+	}
+	extract_args $var
+	if [ $? = "0" ]; then	#check for error
+		ld -m elf_i386 -s -o $x1 $x1.o
+		echo "-------OUTPUT-------"
+		./$x1
+	else
+		echo -e "ERROR: \n"
+		exit 1
+	fi
+}
+#===================================================================================
+## Function to create a directory
+md()
+{
+	if [ ! -d $1 ] ; then
+		mkdir $1
+		echo " Directory named $1 is created."
+	else 
+		echo "Directory already exists."
+	fi
+}
+#===================================================================================
+## Function to create a script
+ms()
+{			
+	if [ ! -e $1 ]; then 
+			echo -e "#\n#\t\t\t\t/* Script file: $1 */\n#!/bin/bash\n" > $1 && mousepad $1	
+			exit lxterminal
+	else
+		echo -e "File already exists."
+	fi
+}
+#===================================================================================
+##Set fastest mirrors
+setm()
+{
+ 
+ sudo cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
+ sudo sed -i 's/^#Server/Server/' /etc/pacman.d/mirrorlist.backup
+ sudo rankmirrors -n 6 /etc/pacman.d/mirrorlist.backup > /etc/pacman.d/mirrorlist
+ exit
+}
+#===================================================================================
+## Function to check battery status
+bat()
+{
+sta=`cat /sys/class/power_supply/BAT0/status`
+bat=`cat /sys/class/power_supply/BAT0/capacity`
+echo -e "\e[92m BATTERY STATUS:$w $sta "; tput sgr0
+echo -e "\e[92m LEVEL:$w $bat %";tput sgr0
+}
+#===================================================================================
+## Function for grub update
+update-grub()
+{
+clear
+echo -e "\e[0;36mUpdating GRUB..........."; tput sgr0
+sudo grub-mkconfig -o /boot/grub/grub.cfg
+echo -e "\e[0;36mGRUB updated succesfully!!!"
+}
+#===================================================================================
+## usage: extract <file1> <file2> ...
+extract() {
+    local c e i
+
+    (($#)) || return
+
+    for i; do
+        c=''
+        e=1
+
+        if [[ ! -r $i ]]; then
+            echo "$0: file is unreadable: \`$i'" >&2
+            continue
+        fi
+
+        case $i in
+            *.t@(gz|lz|xz|b@(2|z?(2))|a@(z|r?(.@(Z|bz?(2)|gz|lzma|xz)))))
+                   c=(bsdtar xvf);;
+            *.7z)  c=(7z x);;
+            *.Z)   c=(uncompress);;
+            *.bz2) c=(bunzip2);;
+            *.exe) c=(cabextract);;
+            *.gz)  c=(gunzip);;
+            *.rar) c=(unrar x);;
+            *.xz)  c=(unxz);;
+            *.zip) c=(unzip);;
+            *)     echo "$0: unrecognized file extension: \`$i'" >&2
+                   continue;;
+        esac
+
+        command "${c[@]}" "$i"
+        ((e = e || $?))
+    done
+    return "$e"
+}
+
+#===================================================================================
+## note-taker
+note () {
+    # if file doesn't exist, create it
+    if [[ ! -f $HOME/.notes ]]; then
+        touch "$HOME/.notes"
+    fi
+
+    if ! (($#)); then
+        # no arguments, print file
+        cat "$HOME/.notes"
+    elif [[ "$1" == "-c" ]]; then
+        # clear file
+        printf "%s" > "$HOME/.notes"
+    else
+        # add all arguments to file
+        printf "%s\n" "$*" >> "$HOME/.notes"
+    fi
+}
+#===================================================================================
