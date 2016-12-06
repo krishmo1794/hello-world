@@ -1,0 +1,59 @@
+#!/bin/bash
+#a script to copy files
+var=`pwd`
+IFS="/"
+
+for arg in $var
+do 
+dir=$arg
+done
+
+IFS=
+if (($#<2)); then
+		echo "usage:"
+		echo -e "\t$0 SRC DST"
+		exit 1
+fi
+
+echo -e "\e[0;36mMake directory [y|n]";tput sgr0
+read opt
+#==================================================================================================
+case $opt in
+y|Y|*) 
+	clear
+	mkdir `echo -e "${!#}$dir"`
+
+	if [ $? = "0" ]; then
+	echo -e "\e[0;36mCreated directory ...";tput sgr0
+	fi
+
+	for (( i=1; i < $#; i++ ))
+	do
+		echo
+		echo -e "  Coping \e[0;36m${@:$i:1}...  "; tput sgr0
+		pv "${@:${i}:1}" > "${!#}$dir/${@:${i}:1}"
+		if [ $? = "0" ]; then 
+				echo -e "\t\e[1;32mSuccessfully copied!"; tput sgr0
+		else
+				echo -e "\e[1;31mError...\nFailed to copy."; tput sgr0
+		fi
+	done
+;;
+#==================================================================================================
+n|N)
+	clear
+	
+	for (( i=1; i < $#; i++ ))
+	do
+		echo
+		echo -e "  Coping \e[0;36m${@:$i:1}...  "; tput sgr0
+		pv "${@:${i}:1}" > "${!#}/${@:${i}:1}"
+		if [ $? = "0" ]; then 
+				echo -e "\t\e[1;32mSuccessfully copied!"
+		else
+				echo -e "\e[1;31mError...\nFailed to copy."; tput sgr0
+		fi
+	done
+;;
+#==================================================================================================
+esac
